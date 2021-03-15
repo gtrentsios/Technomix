@@ -1,4 +1,4 @@
-package com.example.technomix;
+package com.example.technomix.activities;
 
 import android.Manifest;
 import android.content.BroadcastReceiver;
@@ -34,6 +34,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.example.technomix.R;
 import com.example.technomix.utils.Utils;
 
 import java.net.InetAddress;
@@ -54,8 +55,8 @@ public class MainActivity extends AppCompatActivity {
     private static final int CHANGE_WIFI_STATE = 9001;
     private static final int CHANGE_NETWORK_STATE = 9002;
     private static final int INTERNET = 9003;
-    private int networkId;
     private static final int ACCESS_LOCATION = 9004;
+    private int networkId;
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
     @Override
@@ -76,7 +77,12 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 String ssid = (String) parent.getItemAtPosition(position);
-                connectToWifi(ssid, "", 0);
+                Bundle bundle = new Bundle();
+                bundle.putString("inpSSID", ssid);
+                Intent i = new Intent(MainActivity.this, SendWifiCredentials.class);
+                i.putExtras(bundle);
+                startActivity(i);
+                //  connectToWifi(ssid, "", 0);
             }
         });
         adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, arrayList);
@@ -208,50 +214,5 @@ public class MainActivity extends AppCompatActivity {
         ;
     };
 
-    /**
-     * Connect to the specified wifi network.
-     *
-     * @param networkSSID     - The wifi network SSID
-     * @param networkPassword - the wifi password
-     */
-    @RequiresApi(api = Build.VERSION_CODES.Q)
-    private void connectToWifi(final String networkSSID, final String networkPassword,
-                               int networkId) {
-        if (!wifiManager.isWifiEnabled()) {
-            wifiManager.setWifiEnabled(true);
-        }
 
-/*        WifiConfiguration conf = new WifiConfiguration();
-        conf.SSID = String.format("\"%s\"", networkSSID);
-        conf.preSharedKey = String.format("\"%s\"", networkPassword);
-
-        int netId = wifiManager.addNetwork(conf);
-        wifiManager.disconnect();
-        wifiManager.enableNetwork(netId, true);
-        wifiManager.reconnect();*/
-        WifiNetworkSpecifier.Builder builder = new WifiNetworkSpecifier.Builder();
-        builder.setSsid(networkSSID);
-        WifiNetworkSpecifier wifiNetworkSpecifier = builder.build();
-        NetworkRequest.Builder networkRequestBuilder = new NetworkRequest.Builder();
-        networkRequestBuilder.addTransportType(NetworkCapabilities.TRANSPORT_WIFI);
-        networkRequestBuilder.addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED);
-        networkRequestBuilder.addCapability(NetworkCapabilities.NET_CAPABILITY_TRUSTED);
-        networkRequestBuilder.setNetworkSpecifier(wifiNetworkSpecifier);
-        NetworkRequest networkRequest = networkRequestBuilder.build();
-        ConnectivityManager cm = (ConnectivityManager) this.getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
-        if (cm != null) {
-            cm.requestNetwork(networkRequest,
-                    new ConnectivityManager.NetworkCallback() {
-                        @Override
-                        public void onAvailable(@NonNull Network network) {
-                            try {
-                                DhcpInfo dhcp = wifiManager.getDhcpInfo();
-                                String address = Formatter.formatIpAddress(dhcp.gateway);
-                                int i = 0;
-                            } catch (Exception ex) {
-                            }
-                        }
-                    });
-        }
-    }
 }
