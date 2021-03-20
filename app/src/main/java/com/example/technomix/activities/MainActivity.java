@@ -5,22 +5,11 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.net.ConnectivityManager;
-import android.net.DhcpInfo;
-import android.net.LinkProperties;
-import android.net.Network;
-import android.net.NetworkCapabilities;
-import android.net.NetworkRequest;
-import android.net.NetworkSpecifier;
 import android.net.wifi.ScanResult;
-import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
-import android.net.wifi.WifiNetworkSpecifier;
 import android.os.Build;
 import android.os.Bundle;
-import android.content.pm.PackageManager;
-import android.text.format.Formatter;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -28,27 +17,20 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 
 import com.example.technomix.R;
 import com.example.technomix.utils.Utils;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
     private WifiManager wifiManager;
-    private ListView listView;
-    private Button buttonScan;
     private int size = 0;
-    private List<ScanResult> results;
     private ArrayList<String> arrayList = new ArrayList<>();
     private ArrayAdapter adapter;
     private static final int ACCESS_WIFI_STATE = 9000;
@@ -63,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        buttonScan = findViewById(R.id.scanBtn);
+        Button buttonScan = findViewById(R.id.scanBtn);
         buttonScan.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -71,7 +53,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        listView = findViewById(R.id.wifiList);
+        ListView listView = findViewById(R.id.wifiList);
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @RequiresApi(api = Build.VERSION_CODES.Q)
             @Override
@@ -87,6 +69,10 @@ public class MainActivity extends AppCompatActivity {
         });
         adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, arrayList);
         listView.setAdapter(adapter);
+        checkPermissions();
+    }
+/* Permissions methods */
+    void checkPermissions() {
         if (Utils.isWiFiStatePermissionsGranted(this)) {
             if (Utils.isWiFiChangeStatePermissionsGranted(this)) {
                 if (Utils.isSystemWriteSettingsPermissionsGranted(this)) {
@@ -182,7 +168,7 @@ public class MainActivity extends AppCompatActivity {
                 break;
         }
     }
-
+/* WIFI methods */
     @RequiresApi(api = Build.VERSION_CODES.N)
     private void scanWifi() {
         arrayList.clear();
@@ -190,7 +176,7 @@ public class MainActivity extends AppCompatActivity {
         networkId = connectedInfo.getNetworkId();
         registerReceiver(wifiReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
         wifiManager.startScan();
-        Toast.makeText(this, "Scanning WiFi ...", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, "Scanning WiFi ...", Toast.LENGTH_SHORT).show();
         // Register Callback - Call this in your app start!
 
     }
@@ -198,7 +184,7 @@ public class MainActivity extends AppCompatActivity {
     BroadcastReceiver wifiReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            results = wifiManager.getScanResults();
+            List<ScanResult> results = wifiManager.getScanResults();
             unregisterReceiver(this);
 
             for (ScanResult scanResult : results) {
@@ -209,6 +195,7 @@ public class MainActivity extends AppCompatActivity {
                     adapter.notifyDataSetChanged();
                 }
             }
+
         }
 
         ;
