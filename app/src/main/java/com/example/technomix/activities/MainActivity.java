@@ -38,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int CHANGE_NETWORK_STATE = 9002;
     private static final int INTERNET = 9003;
     private static final int ACCESS_LOCATION = 9004;
-    private int networkId;
+    private String connectedSIID;
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
     @Override
@@ -61,6 +61,7 @@ public class MainActivity extends AppCompatActivity {
                 String ssid = (String) parent.getItemAtPosition(position);
                 Bundle bundle = new Bundle();
                 bundle.putString("inpSSID", ssid);
+                bundle.putString("connected",connectedSIID);
                 Intent i = new Intent(MainActivity.this, SendWifiCredentials.class);
                 i.putExtras(bundle);
                 startActivity(i);
@@ -173,7 +174,7 @@ public class MainActivity extends AppCompatActivity {
     private void scanWifi() {
         arrayList.clear();
         WifiInfo connectedInfo = wifiManager.getConnectionInfo();
-        networkId = connectedInfo.getNetworkId();
+        //networkId = connectedInfo.getNetworkId();
         registerReceiver(wifiReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
         wifiManager.startScan();
         //Toast.makeText(this, "Scanning WiFi ...", Toast.LENGTH_SHORT).show();
@@ -186,10 +187,10 @@ public class MainActivity extends AppCompatActivity {
         public void onReceive(Context context, Intent intent) {
             List<ScanResult> results = wifiManager.getScanResults();
             unregisterReceiver(this);
-
+            WifiInfo info = wifiManager.getConnectionInfo();
+            connectedSIID = info.getSSID();
             for (ScanResult scanResult : results) {
-                WifiInfo info = wifiManager.getConnectionInfo();
-                String ssid = info.getSSID();
+
                 if (scanResult.SSID.contains("Technomix")) {
                     arrayList.add(scanResult.SSID);
                     adapter.notifyDataSetChanged();

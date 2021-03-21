@@ -11,6 +11,8 @@ import android.net.wifi.WifiNetworkSpecifier;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.StrictMode;
+import android.text.format.Formatter;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -18,27 +20,25 @@ import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import com.example.technomix.R;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import java.io.OutputStream;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.URL;
-import java.net.URLConnection;
 import java.net.URLEncoder;
 
 public class SendWifiCredentials extends AppCompatActivity {
     private WifiManager wifiManager;
     EditText SSID, Pwd;
-    String sSSID,  sPwd;
-    String sDeviceSSID;
-    String sURL;
+    String  sSSID,  sPwd;
+    String  sDeviceSSID;
+    String  connectedSIID;
+    String  sURL;
     HttpURLConnection conn;
     private Button buttonSend;
     @RequiresApi(api = Build.VERSION_CODES.Q)
@@ -53,6 +53,7 @@ public class SendWifiCredentials extends AppCompatActivity {
         Bundle bundle = getIntent().getExtras();
 //Extract the data…
         sDeviceSSID = bundle.getString("inpSSID");
+        connectedSIID = bundle.getString("connectedSIID");
         //connectToWifi(sSSID);
         buttonSend = findViewById(R.id.SendCredentialToDevice);
         buttonSend.setOnClickListener(new View.OnClickListener() {
@@ -66,6 +67,14 @@ public class SendWifiCredentials extends AppCompatActivity {
             }
         });
         connectToWifi(sDeviceSSID);
+        int SDK_INT = android.os.Build.VERSION.SDK_INT;
+        if (SDK_INT > 8)
+        {
+            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder()
+                    .permitAll().build();
+            StrictMode.setThreadPolicy(policy);
+
+        }
     }
 
     /**
@@ -100,6 +109,7 @@ public class SendWifiCredentials extends AppCompatActivity {
                                 String[] ipParts = hostIP.split("\\.");
                                 String deviceIP = ipParts[3] + "." + ipParts[2] + "." + ipParts[1] + "." + "71";
                                 sURL = "http://" + deviceIP  + "/WIFI";
+                               // sURL = "http://google.gr";
                                 //GetText(sURL);
                             } catch (Exception ex) {
                             }
@@ -118,7 +128,8 @@ public class SendWifiCredentials extends AppCompatActivity {
     }
 
     public void GetText(String sURL) throws UnsupportedEncodingException {
-
+        WifiManager wm = (WifiManager) getSystemService(WIFI_SERVICE);
+        String ip = Formatter.formatIpAddress(wm.getConnectionInfo().getIpAddress());
         sSSID = SSID.getText().toString();
         sPwd = Pwd.getText().toString();
         // Create data variable for sent values to server
@@ -128,16 +139,29 @@ public class SendWifiCredentials extends AppCompatActivity {
         BufferedReader reader = null;
         // Send data
         try {
-            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+            /*
+           StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
             StrictMode.setThreadPolicy(policy);
+
+             */
+
             // Defined URL  where to send data
             URL url = new URL(sURL);
             // Send POST data request
             conn = (HttpURLConnection) url.openConnection();
             conn.setDoOutput(true);
-            BufferedOutputStream wr = new BufferedOutputStream(conn.getOutputStream());
-            wr.write(data.getBytes("UTF-8"));
-            wr.flush();
+            conn.setChunkedStreamingMode(0);
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("User-Agent", "TechnomixAndroidAgent");
+            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            conn.setUseCaches (false);
+            OutputStream outStream = conn.getOutputStream();
+           // OutputStream outStream = new URL("http://stackoverflow.com").openStream();
+            OutputStream out = new BufferedOutputStream(outStream);
+
+            out.write(data.getBytes("UTF-8"));
+            out.flush();
+            out.close();
             // Get the server response
             InputStream in = new BufferedInputStream(conn.getInputStream());
             // Read Server Response
@@ -149,7 +173,8 @@ public class SendWifiCredentials extends AppCompatActivity {
             }
             text = sb.toString();
         } catch (Exception ex) {
-            int i = 0;
+            Log.e("URL Connection", "STACKTRACE");
+            Log.e("URL Connection", Log.getStackTraceString(ex));
         } finally {
             try {
                 conn.disconnect();
@@ -158,5 +183,4 @@ public class SendWifiCredentials extends AppCompatActivity {
             }
         }
     }
-
 }
