@@ -20,6 +20,12 @@ import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import com.example.technomix.R;
+
+import org.apache.http.NameValuePair;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.message.BasicNameValuePair;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -31,6 +37,8 @@ import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.List;
 
 public class SendWifiCredentials extends AppCompatActivity {
     private WifiManager wifiManager;
@@ -128,6 +136,8 @@ public class SendWifiCredentials extends AppCompatActivity {
     }
 
     public void GetText(String sURL) throws UnsupportedEncodingException {
+
+
         WifiManager wm = (WifiManager) getSystemService(WIFI_SERVICE);
         String ip = Formatter.formatIpAddress(wm.getConnectionInfo().getIpAddress());
         sSSID = SSID.getText().toString();
@@ -149,19 +159,23 @@ public class SendWifiCredentials extends AppCompatActivity {
             URL url = new URL(sURL);
             // Send POST data request
             conn = (HttpURLConnection) url.openConnection();
+            conn.setReadTimeout(15000);
+            conn.setConnectTimeout(15000);
+            conn.setDoInput(true);
             conn.setDoOutput(true);
             conn.setChunkedStreamingMode(0);
             conn.setRequestMethod("POST");
             conn.setRequestProperty("User-Agent", "TechnomixAndroidAgent");
             conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
             conn.setUseCaches (false);
-            OutputStream outStream = conn.getOutputStream();
+            //OutputStream outStream = conn.getOutputStream();
+            OutputStream outStream = new BufferedOutputStream(conn.getOutputStream());
            // OutputStream outStream = new URL("http://stackoverflow.com").openStream();
-            OutputStream out = new BufferedOutputStream(outStream);
+           //OutputStream out = new BufferedOutputStream(outStream);
 
-            out.write(data.getBytes("UTF-8"));
-            out.flush();
-            out.close();
+            outStream.write(data.getBytes("UTF-8"));
+            outStream.flush();
+            outStream.close();
             // Get the server response
             InputStream in = new BufferedInputStream(conn.getInputStream());
             // Read Server Response
@@ -183,4 +197,5 @@ public class SendWifiCredentials extends AppCompatActivity {
             }
         }
     }
+
 }
