@@ -14,31 +14,36 @@ import android.os.StrictMode;
 import android.text.format.Formatter;
 import android.util.Log;
 import android.view.View;
+import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.EditText;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
-import com.example.technomix.R;
 
-import org.apache.http.NameValuePair;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.message.BasicNameValuePair;
+import com.example.technomix.R;
+import com.example.technomix.utils.Background_send_credentials;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
+import java.net.Proxy;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.URL;
+import java.net.URLConnection;
 import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.List;
+import java.net.UnknownHostException;
 
 public class SendWifiCredentials extends AppCompatActivity {
     private WifiManager wifiManager;
@@ -48,6 +53,8 @@ public class SendWifiCredentials extends AppCompatActivity {
     String  connectedSIID;
     String  sURL;
     HttpURLConnection conn;
+    String deviceIP;
+    DhcpInfo dhcp;
     private Button buttonSend;
     @RequiresApi(api = Build.VERSION_CODES.Q)
     @Override
@@ -68,10 +75,11 @@ public class SendWifiCredentials extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 try {
-                    GetText(sURL);
+                    Connect01(sURL);
                 } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();
                 }
+
             }
         });
         connectToWifi(sDeviceSSID);
@@ -112,11 +120,12 @@ public class SendWifiCredentials extends AppCompatActivity {
                         @Override
                         public void onAvailable(@NonNull Network network) {
                             try {
-                                DhcpInfo dhcp = wifiManager.getDhcpInfo();
+                                dhcp = wifiManager.getDhcpInfo();
                                 String hostIP = InetAddress.getByAddress(intToByteArray(dhcp.gateway)).getHostAddress();
                                 String[] ipParts = hostIP.split("\\.");
-                                String deviceIP = ipParts[3] + "." + ipParts[2] + "." + ipParts[1] + "." + "71";
-                                sURL = "http://" + deviceIP  + "/WIFI";
+                                 deviceIP = ipParts[3] + "." + ipParts[2] + "." + ipParts[1] + "." + "71";
+                                //sURL = "http://" + deviceIP  + "/WIFI";
+                                sURL = "http://" + deviceIP +"/";
                                // sURL = "http://google.gr";
                                 //GetText(sURL);
                             } catch (Exception ex) {
@@ -134,11 +143,18 @@ public class SendWifiCredentials extends AppCompatActivity {
         ret[0] = (byte) ((a >> 24) & 0xFF);
         return ret;
     }
+    public static byte[] intToByteArray2(int a) {
+        byte[] ret = new byte[4];
+        ret[0] = (byte) (a & 0xFF);
+        ret[1] = (byte) ((a >> 8) & 0xFF);
+        ret[2] = (byte) ((a >> 16) & 0xFF);
+        ret[3] = (byte) ((a >> 24) & 0xFF);
+        return ret;
+    }
+    public void Connect01(String sURL) throws UnsupportedEncodingException {
 
-    public void GetText(String sURL) throws UnsupportedEncodingException {
 
-
-        WifiManager wm = (WifiManager) getSystemService(WIFI_SERVICE);
+        WifiManager wm = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
         String ip = Formatter.formatIpAddress(wm.getConnectionInfo().getIpAddress());
         sSSID = SSID.getText().toString();
         sPwd = Pwd.getText().toString();
@@ -154,17 +170,22 @@ public class SendWifiCredentials extends AppCompatActivity {
             StrictMode.setThreadPolicy(policy);
 
              */
+            URL url = new URL(sURL);
+            Proxy proxy = new Proxy(Proxy.Type.DIRECT,
+                    new InetSocketAddress(
+                            InetAddress.getByAddress(intToByteArray2(dhcp.ipAddress)), Integer.parseInt("80")));
+            URLConnection conn = url.openConnection(proxy);
 
             // Defined URL  where to send data
-            URL url = new URL(sURL);
+
             // Send POST data request
-            conn = (HttpURLConnection) url.openConnection();
-            conn.setReadTimeout(15000);
-            conn.setConnectTimeout(15000);
+            //conn = (HttpURLConnection) url.openConnection();
+            conn.setReadTimeout(25000);
+            conn.setConnectTimeout(25000);
             conn.setDoInput(true);
             conn.setDoOutput(true);
-            conn.setChunkedStreamingMode(0);
-            conn.setRequestMethod("POST");
+           // conn.setChunkedStreamingMode(0);
+           // conn.setRequestMethod("POST");
             conn.setRequestProperty("User-Agent", "TechnomixAndroidAgent");
             conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
             conn.setUseCaches (false);
@@ -195,6 +216,22 @@ public class SendWifiCredentials extends AppCompatActivity {
             } catch (Exception ex) {
                 int i = 0;
             }
+        }
+    }
+    private void connect2(String sURL){
+        Socket echoSocket = null;
+        DataOutputStream os = null;
+        DataInputStream is = null;
+        DataInputStream stdIn = new DataInputStream(System.in);
+        try {
+            echoSocket = new Socket(sURL, 80);
+            os = new DataOutputStream(echoSocket.getOutputStream());
+            is = new DataInputStream(echoSocket.getInputStream());
+
+        } catch (UnknownHostException e) {
+            System.err.println("Don't know about host: Jatin");
+        } catch (IOException e) {
+            System.err.println("Couldn't get I/O for the connection to: Jatin");
         }
     }
 
